@@ -20,7 +20,7 @@ class wikicrawler_1(scrapy.Spider):
 
     def start_requests(self):
         for url in self.start_urls:
-            yield Request(url=self.start_urls, callback=self.parse)
+            yield Request(url=url, callback=self.parse)
 
 
 
@@ -62,7 +62,7 @@ class wikicrawler_1(scrapy.Spider):
 
 
         # 词条url
-        print(response.url)
+        url = response.url
 
 
         # 词条名称name
@@ -82,7 +82,8 @@ class wikicrawler_1(scrapy.Spider):
         content_list = []
         for title in content_node:
             content_name = title.xpath("string(.)").extract_first()
-            truename = re.search(r'(?<=\d).\w{2,}.*', content_name, flags=0).group()
+            if re.search(r'(?<=\d).\w{2,}.*', content_name, flags=0):
+                truename = re.search(r'(?<=\d).\w{2,}.*', content_name, flags=0).group()
             content_list.append(truename)
         content = dict.fromkeys(tuple(content_list))
         keys = list(content.keys())
@@ -91,18 +92,20 @@ class wikicrawler_1(scrapy.Spider):
 
             # 对上一次循环中多余的内容进行删减
             if i > 0:
-                topic_clears = selector.xpath("//span[@id='" + link + "']/../preceding-sibling::p| \
-                                            //span[@id='" + link + "']/../preceding-sibling::ul| \
-                                            //span[@id='" + link + "']/../preceding-sibling::div")
+                topic_clears = selector.xpath("//span[@id=\"" + link + "\"]/../preceding-sibling::p| \
+                                            //span[@id=\"" + link + "\"]/../preceding-sibling::ul| \
+                                            //span[@id=\"" + link + "\"]/../preceding-sibling::div \
+                                            //span[@id=\"" + link + "\"]/../preceding-sibling::table")
                 topic_clearlist = []
                 for topic_clear in topic_clears:
                     topic_clearlist.append(topic_clear.xpath('string(.)').extract_first())
                 source_list = content[keys[i - 1]]
                 content[keys[i - 1]] = [a for a in topic_clearlist if a in source_list]
 
-            topics = selector.xpath("//span[@id='" + link + "']/../following-sibling::p| \
-                                    //span[@id='" + link + "']/../following-sibling::ul| \
-                                    //span[@id='" + link + "']/../following-sibling::div")
+            topics = selector.xpath("//span[@id=\"" + link + "\"]/../following-sibling::p| \
+                                    //span[@id=\"" + link + "\"]/../following-sibling::ul| \
+                                    //span[@id=\"" + link + "\"]/../following-sibling::div \
+                                    //span[@id=\"" + link + "\"]/../following-sibling::table")
             topic_contend = []
             for topic in topics:
                 topic_contend.append(topic.xpath('string(.)').extract_first())
@@ -139,7 +142,7 @@ class wikicrawler_1(scrapy.Spider):
 
 
         item = entryItem()
-        item["url"] = response.url
+        item["url"] = url
         item["name"] = name
         item["summary"] = summary
         item["info"] = info
